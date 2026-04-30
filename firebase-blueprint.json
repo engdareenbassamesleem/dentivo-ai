@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile data.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["patient", "admin", "clinic_owner"] },
+        "avatar": { "type": "string" },
+        "onboarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Clinic": {
+      "title": "Clinic",
+      "description": "Clinic profile data for owners.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clinicName": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "services": { "type": "array", "items": { "type": "string" } },
+        "workingHours": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clinicName", "ownerName", "userId"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient records for the dental clinic.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who owns this record (typically the patient or admin)." },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "avatar": { "type": "string" },
+        "status": { "type": "string", "enum": ["Stable", "Treatment", "Pending", "Standard", "VIP", "New Patient"] },
+        "lastVisit": { "type": "string" },
+        "nextAppt": { "type": "string" },
+        "treatment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Scheduled appointments and booking requests.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "serviceType": { "type": "string" },
+        "apptDate": { "type": "string" },
+        "apptTime": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["Scheduled", "Completed", "Cancelled", "Pending"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patientName", "phone", "email", "serviceType", "apptDate", "apptTime", "userId"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "AI chatbot messages.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Information about patients."
+    },
+    "/appointments/{apptId}": {
+      "schema": "Appointment",
+      "description": "Clinic appointments."
+    },
+    "/clinics/{clinicId}": {
+      "schema": "Clinic",
+      "description": "Information about a specific dental clinic."
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "ChatMessage",
+      "description": "Chat history for a user."
+    }
+  }
+}

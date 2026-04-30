@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users Collection
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role'])
+             && data.name is string && data.name.size() <= 100
+             && data.email is string && data.email.size() <= 100
+             && data.role in ['patient', 'admin', 'clinic_owner'];
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    // Clinics Collection
+    function isValidClinic(data) {
+      return data.keys().hasAll(['clinicName', 'ownerName', 'userId'])
+             && data.clinicName is string && data.clinicName.size() <= 200
+             && data.ownerName is string && data.ownerName.size() <= 200
+             && data.userId == request.auth.uid;
+    }
+
+    match /clinics/{clinicId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.get('userId', '') == request.auth.uid);
+      allow create: if isSignedIn() && isValidClinic(request.resource.data);
+      allow update: if isSignedIn() && isValidClinic(request.resource.data);
+    }
+
+    // Patients Collection
+    function isValidPatient(data) {
+      return data.keys().hasAll(['name', 'status', 'userId'])
+             && data.name is string && data.name.size() <= 128
+             && data.status is string && data.status.size() <= 64
+             && data.userId == request.auth.uid;
+    }
+
+    match /patients/{patientId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.get('userId', '') == request.auth.uid);
+      allow create: if isSignedIn() && isValidPatient(request.resource.data);
+      allow update: if isSignedIn() && isValidPatient(request.resource.data);
+      allow delete: if isSignedIn() && (resource == null || resource.data.get('userId', '') == request.auth.uid);
+    }
+
+    // Appointments Collection
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['patientName', 'phone', 'email', 'serviceType', 'apptDate', 'apptTime', 'userId'])
+             && data.patientName is string && data.patientName.size() <= 128
+             && data.phone is string && data.phone.size() <= 32
+             && data.email is string && data.email.size() <= 128
+             && data.serviceType is string && data.serviceType.size() <= 128
+             && data.apptDate is string && data.apptDate.size() <= 128
+             && data.apptTime is string && data.apptTime.size() <= 128
+             && data.userId == request.auth.uid;
+    }
+
+    match /appointments/{apptId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.get('userId', '') == request.auth.uid);
+      allow create: if isSignedIn() && isValidAppointment(request.resource.data);
+      allow update: if isSignedIn() && isValidAppointment(request.resource.data);
+      allow delete: if isSignedIn() && (resource == null || resource.data.get('userId', '') == request.auth.uid);
+    }
+
+    // Test Collection (for connection check)
+    match /test/{docId} {
+      allow read: if isSignedIn();
+    }
+
+    // Chat History (User specific)
+    match /users/{userId}/chats/{chatId} {
+      // Split read to prevent list errors with isValidId
+      allow get: if isOwner(userId) && isValidId(chatId);
+      allow list: if isOwner(userId);
+      
+      allow create: if isOwner(userId) 
+                    && isValidId(chatId)
+                    && request.resource.data.keys().hasAll(['role', 'content', 'createdAt', 'userId'])
+                    && request.resource.data.role in ['user', 'model', 'assistant']
+                    && request.resource.data.content is string
+                    && request.resource.data.content.size() <= 5000
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.createdAt == request.time;
+      
+      allow update, delete: if false; // Chats are usually immutable history
+    }
+  }
+}
