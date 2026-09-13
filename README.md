@@ -156,3 +156,9 @@ AI Engineer focused on building AI-powered applications, automation workflows, a
 ---
 
 ⭐ If you find this project interesting, feel free to explore the code and follow the project for future updates.
+
+## Local-demo implementation notes
+
+The current Vite configuration injects GEMINI_API_KEY into the browser bundle, and src/lib/gemini.ts calls Gemini from the client. Treat this as a local prototype: move provider calls behind a server before deploying with a private key. A value in an environment file is not server-secret when bundled into browser JavaScript.
+
+The assistant's booking language is a conversation flow, not proof that availability was checked or a booking was delivered to clinic staff. Confirm the actual persistence and delivery path before relying on it. Use synthetic data for portfolio demonstrations.
