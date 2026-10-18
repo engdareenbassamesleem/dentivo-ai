@@ -20,5 +20,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Lint / type-check
         run: npm run lint
+      - name: Server API tests
+        run: npm run test:api
       - name: Build
         run: npm run build
