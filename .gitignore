@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Firebase Admin service account files must stay out of git
+*service-account*.json
+firebase-adminsdk*.json

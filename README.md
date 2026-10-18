@@ -38,10 +38,14 @@ Patient / Clinic User
  React + TypeScript UI
         │
         ├──────────────► Firebase Authentication
-        │
         ├──────────────► Cloud Firestore
-        │
-        └──────────────► Gemini AI
+        └──────────────► /api/chat + Firebase ID token
+                              │
+                              ▼
+                 Node.js server (verify ID token)
+                              │
+                              ▼
+                       Gemini API (server only)
                               │
                               ▼
                     Conversational Responses
@@ -74,7 +78,7 @@ dentivo-ai/
 │   ├── index.css        # Global styles
 │   └── lib/
 │       ├── firebase.ts  # Firebase configuration and authentication
-│       ├── gemini.ts    # Gemini AI integration
+│       ├── gemini.ts    # Authenticated backend API client
 │       └── utils.ts     # Utility functions
 ├── firebase-applet-config.json
 ├── firestore.rules
@@ -105,19 +109,37 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env.local` file and add your Gemini API key:
+Create a `.env.local` file based on `.env.example`, and configure `GEMINI_API_KEY` **only for the Node.js API**. Configure Firebase Authentication and Firebase Admin Application Default Credentials (for local development, `GOOGLE_APPLICATION_CREDENTIALS` can point to a local service-account JSON file). Never commit secrets, service-account files, or patient data. The Vite frontend must not receive the Gemini key.
 
-```env
-GEMINI_API_KEY=your_api_key_here
+### 4. Run both development processes
+
+Start the server in terminal A:
+
+```bash
+npm run dev:api
 ```
 
-Configure Firebase using the project's Firebase configuration setup.
-
-### 4. Run the development server
+Start the frontend in terminal B:
 
 ```bash
 npm run dev
 ```
+
+Vite proxies `/api/*` to `http://127.0.0.1:8787`. The server binds to loopback only. Do not expose the development server publicly.
+
+### 5. Verify changes
+
+```bash
+npm run test:api
+npm run lint
+npm run build
+```
+
+The backend verifies Firebase ID tokens; chat requests are bounded by input size and a simple **in-memory** per-user rate limit. This rate limit is suitable only for a local demo, not a multi-instance production service. Production deployment needs stronger abuse controls, App Check or equivalent checks, robust logging policies, HTTPS, and privacy/data-retention review. Run only with synthetic clinic/patient information.
+
+**Important:** The example UI still contains fabricated dashboard analytics and demo patient records. They must be clearly marked as synthetic or removed before any external portfolio demo. Booking requests must not be described as sent to clinic staff without a real verified delivery integration.
+
+The Gemini model name is configured by `GEMINI_MODEL`; verify current provider availability independently.
 
 The application will run locally using the Vite development server.
 
@@ -159,6 +181,6 @@ AI Engineer focused on building AI-powered applications, automation workflows, a
 
 ## Local-demo implementation notes
 
-The current Vite configuration injects GEMINI_API_KEY into the browser bundle, and src/lib/gemini.ts calls Gemini from the client. Treat this as a local prototype: move provider calls behind a server before deploying with a private key. A value in an environment file is not server-secret when bundled into browser JavaScript.
+The chat client now calls a local Node.js API which verifies Firebase ID tokens and invokes Gemini server-side. This design has not been audited or deployed as a production healthcare service.
 
 The assistant's booking language is a conversation flow, not proof that availability was checked or a booking was delivered to clinic staff. Confirm the actual persistence and delivery path before relying on it. Use synthetic data for portfolio demonstrations.
